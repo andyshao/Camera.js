@@ -54,11 +54,23 @@ Camera.prototype.startCamera = function(callback) {
         navigator.getUserMedia(
             this.resolution,
             function successCallBack(stream) {
-                console.log(callback);
                 self.mediaStream = stream;
                 self.video.src = (window.URL && window.URL.createObjectURL(stream));
                 self.video.play();
-                
+
+                console.log(self.video.readyState);
+                if (self.video.readyState != 0) {
+
+                    var videoWidth = self.video.videoWidth;
+                    var videoHeight = self.video.videoHeight;
+
+                    self.canvas.width = videoWidth;
+                    self.canvas.height = videoHeight;
+
+                    self.image.width = videoWidth;
+                    self.image.height = videoHeight;
+                }
+
                 callback();
             }, function errorCallback(error) {
                 console.log("An error occured: " + error.code);
@@ -76,43 +88,17 @@ Camera.prototype.stopCamera = function() {
 };
 
 Camera.prototype.takePicture = function() {
-    // Get the video width and height
-    var currentVideoWidth = this.video.videoWidth;
-    var currentVideoHeight = this.video.videoHeight;
+    var self = this;
 
-    // If the video width and height are 0, then display an alert saying that the video is not playing
-    if (currentVideoWidth == 0 && currentVideoHeight == 0) {
-        alert("Video is not playing");
-    } else {
-        // Set the video tag to the resolution
-        $(this.video).attr("width", currentVideoWidth);
-        $(this.video).attr("height", currentVideoHeight);
+    console.log(self);
 
-        // Set the canvas tag to the resolution
-        $(this.canvas).attr("width", currentVideoWidth);
-        $(this.canvas).attr("height", currentVideoHeight);
+    // Get the frame from the video
+    var ctx = self.canvas.getContext('2d');
+    ctx.drawImage(self.video, 0, 0);
 
-        // Get the frame from the video
-        var ctx = this.canvas.getContext('2d');
-        ctx.drawImage(this.video, 0, 0);
+    var imageBaseSrc64 = self.canvas.toDataURL('image/png');
 
-        var imageBaseSrc64 = this.canvas.toDataURL('image/png');
-
-        this.image.src = imageBaseSrc64;
-
-        //// Set the image tag to the canvas as a PNG
-        //this.rotateImage(imageBaseSrc64, function(data) {
-        //    // Set the image to the data returned from rotateImage
-        //    this.image.src = data;
-        //
-        //    // When the image is loaded/set, close the camera dialog and open the image confirm dialog
-        //    this.image.onload = function() {
-        //        alert('image onload!');
-        //    }
-        //
-        //});
-
-    }
+    self.image.src = imageBaseSrc64;
 };
 
 Camera.prototype.rotateLeft = function() {
@@ -243,5 +229,3 @@ Camera.prototype.fixVideoPadding = function() {
         $(this.video).css('padding-bottom', '0px');
     }
 };
-
-window.Camera = Camera;
