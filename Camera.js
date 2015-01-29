@@ -36,26 +36,37 @@ var Camera = Camera || function(minWidth, minHeight, video, canvas, image) {
     };
 
 Camera.prototype.startCamera = function(callback) {
+    var self = this;
+
     // Set the navigator.getUserMedia to the appropriate browser
     navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia ||
-    navigator.mozGetUserMedia || navigator.msGetUserMedia;
+        navigator.mozGetUserMedia || navigator.msGetUserMedia;
 
     // Set the window.URL object to the appropriate browser
     window.URL = window.URL || window.webkitURL || window.mozURL || window.msURL;
+
+    //navigator.style.transform = navigator.style.webkitTransform || navigator.style.mozTransform ||
+    //    navigator.style.msTransform || navigator.style.oTransform || navigator.style.transform;
+
+    //console.log(navigator.style.transform);
 
     if (navigator.getUserMedia) {
         navigator.getUserMedia(
             this.resolution,
             function successCallBack(stream) {
-                this.mediaStream = stream;
-                this.video.src = (window.URL && window.URL.createObjectURL(stream));
-                this.video.play();
+                console.log(callback);
+                self.mediaStream = stream;
+                self.video.src = (window.URL && window.URL.createObjectURL(stream));
+                self.video.play();
+                
                 callback();
             }, function errorCallback(error) {
                 console.log("An error occured: " + error.code);
             }
         );
     }
+
+
 };
 
 Camera.prototype.stopCamera = function() {
@@ -105,7 +116,15 @@ Camera.prototype.takePicture = function() {
 };
 
 Camera.prototype.rotateLeft = function() {
-    this.videoRotation = -90;
+    if (this.videoRotation != -90) {
+        this.videoRotation -= -90;
+    }
+
+    this.video.style.webkitTransform = 'rotate('+deg+'deg)';
+    this.video.style.mozTransform    = 'rotate('+deg+'deg)';
+    this.video.style.msTransform     = 'rotate('+deg+'deg)';
+    this.video.style.oTransform      = 'rotate('+deg+'deg)';
+    this.video.style.transform       = 'rotate('+deg+'deg)';
 };
 
 Camera.prototype.rotateRight = function() {
@@ -224,3 +243,5 @@ Camera.prototype.fixVideoPadding = function() {
         $(this.video).css('padding-bottom', '0px');
     }
 };
+
+window.Camera = Camera;
