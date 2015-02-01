@@ -4,18 +4,31 @@ var Camera = Camera || function(minWidth, minHeight, video, canvas, image) {
 
         console.log('camera obj setting up variables...');
 
+        // Set the navigator.getUserMedia to the appropriate browser
+        navigator.getUserMedia = (navigator.getUserMedia || navigator.webkitGetUserMedia ||
+        navigator.mozGetUserMedia || navigator.msGetUserMedia);
+
+        // Set the window.URL object to the appropriate browser
+        window.URL = (window.URL || window.webkitURL || window.mozURL || window.msURL);
+
+        console.log('camera minwidth x midheight: ' + minWidth + 'x' + minHeight);
+
         this.video = video;
+
+        this.video.width = minWidth;
+        this.video.height = minWidth;
+
+        this.video.style.transform = (this.video.style.transform || this.video.style.webkitTransform || this.video.style.mozTransform ||
+        this.video.style.msTransform || this.video.style.oTransform);
 
         this.canvas = canvas;
 
         this.image = image;
 
         this.resolution = {
-            video: {
-                "mandatory": {
-                    "minWidth": "minWidth",
-                    "minHeight": "minHeight"
-                }
+            "mandatory": {
+                "minWidth": minWidth,
+                "minHeight": minHeight
             }
         };
 
@@ -38,13 +51,6 @@ var Camera = Camera || function(minWidth, minHeight, video, canvas, image) {
 Camera.prototype.startCamera = function(callback) {
     var self = this;
 
-    // Set the navigator.getUserMedia to the appropriate browser
-    navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia ||
-        navigator.mozGetUserMedia || navigator.msGetUserMedia;
-
-    // Set the window.URL object to the appropriate browser
-    window.URL = window.URL || window.webkitURL || window.mozURL || window.msURL;
-
     //navigator.style.transform = navigator.style.webkitTransform || navigator.style.mozTransform ||
     //    navigator.style.msTransform || navigator.style.oTransform || navigator.style.transform;
 
@@ -52,28 +58,53 @@ Camera.prototype.startCamera = function(callback) {
 
     if (navigator.getUserMedia) {
         navigator.getUserMedia(
-            this.resolution,
+            {
+                audio: false,
+                video: self.resolution
+            },
             function successCallBack(stream) {
                 self.mediaStream = stream;
                 self.video.src = (window.URL && window.URL.createObjectURL(stream));
                 self.video.play();
 
-                console.log(self.video.readyState);
-                if (self.video.readyState != 0) {
+                var retryCount = 0;
+                var retryLimit = 50;
 
-                    var videoWidth = self.video.videoWidth;
-                    var videoHeight = self.video.videoHeight;
+                camera.video.onplaying = function(e) {
+                    var videoWidth = this.videoWidth;
+                    var videoHeight = this.videoHeight;
 
-                    self.canvas.width = videoWidth;
-                    self.canvas.height = videoHeight;
+                    if (!videoWidth || !videoHeight) {
+                        if (retryCount < retryLimit) {
+                            retryCount++;
+                            window.setTimeout(function () {
+                                video.pause();
+                                video.play();
+                            }, 100);
+                        }
 
-                    self.image.width = videoWidth;
-                    self.image.height = videoHeight;
-                }
+                    } else if (videoWidth && videoHeight) {
+                        self.canvas.width = videoWidth;
+                        self.canvas.height = videoHeight;
+
+                        self.image.width = videoWidth;
+                        self.image.height = videoHeight;
+
+                        self.aspectRatio =  Number(videoWidth/videoHeight).toFixed(2);
+                        var differenceBetweenWidthHeight = (videoWidth - videoHeight);
+                        console.log(differenceBetweenWidthHeight);
+
+                        //this.style.margin = differenceBetweenWidthHeight + 'px';
+
+                        //fixMargins(differenceBetweenWidthHeight, self.canvas, self.image);
+                    } else {
+                        console.log("An error has occurred: Can't retrieve video width and height");
+                    }
+                };
 
                 callback();
             }, function errorCallback(error) {
-                console.log("An error occured: " + error.code);
+                console.log("An error occurred: " + error.code);
             }
         );
     }
@@ -81,16 +112,16 @@ Camera.prototype.startCamera = function(callback) {
 
 };
 
-Camera.prototype.stopCamera = function() {
+Camera.prototype.stopCamera = function(callback) {
     this.mediaStream.stop();
     this.mediaStream = null;
     this.video.pause();
+
+    callback();
 };
 
 Camera.prototype.takePicture = function() {
     var self = this;
-
-    console.log(self);
 
     // Get the frame from the video
     var ctx = self.canvas.getContext('2d');
@@ -102,15 +133,13 @@ Camera.prototype.takePicture = function() {
 };
 
 Camera.prototype.rotateLeft = function() {
-    if (this.videoRotation != -90) {
+    if (this.videoRotation > -90) {
         this.videoRotation -= -90;
     }
 
-    this.video.style.webkitTransform = 'rotate('+deg+'deg)';
-    this.video.style.mozTransform    = 'rotate('+deg+'deg)';
-    this.video.style.msTransform     = 'rotate('+deg+'deg)';
-    this.video.style.oTransform      = 'rotate('+deg+'deg)';
-    this.video.style.transform       = 'rotate('+deg+'deg)';
+    this.video.style.transform = 'rotate(' + this.videoRotation + 'deg)';
+    this.video.style.height = this.video.videoWidth;
+    console.log(this.video.videoWidth);
 };
 
 Camera.prototype.rotateRight = function() {
