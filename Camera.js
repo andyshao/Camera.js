@@ -125,6 +125,37 @@ Camera.prototype.takePicture = function() {
 
     // Get the frame from the video
     var ctx = self.canvas.getContext('2d');
+
+
+    if (self.videoRotation != 0) {
+        self.canvas.height = self.video.videoWidth;
+        self.canvas.width = self.video.videoHeight;
+
+        self.image.height = self.video.videoWidth;
+        self.image.width = self.video.videoHeight;
+
+        switch (self.videoRotation) {
+            case 90:
+                ctx.translate(self.canvas.width, 0);
+                break;
+            case -90:
+                ctx.translate(0, self.canvas.height);
+                break;
+            default:
+
+                break;
+        }
+
+        // Rotate the 2d context base on the degree (90 or -90)
+        ctx.rotate(self.videoRotation * (Math.PI/180));
+    } else {
+        self.canvas.height = self.video.videoHeight;
+        self.canvas.width = self.video.videoWidth;
+
+        self.image.height = self.video.videoHeight;
+        self.image.width = self.video.videoWidth;
+    }
+
     ctx.drawImage(self.video, 0, 0);
 
     var imageBaseSrc64 = self.canvas.toDataURL('image/png');
@@ -133,128 +164,15 @@ Camera.prototype.takePicture = function() {
 };
 
 Camera.prototype.rotateLeft = function() {
-    if (this.videoRotation > -90) {
-        this.videoRotation -= -90;
+    if (this.videoRotation != -90) {
+        this.videoRotation -= 90;
+        this.video.style.transform = 'rotate(' + this.videoRotation + 'deg)';
     }
-
-    this.video.style.transform = 'rotate(' + this.videoRotation + 'deg)';
-    this.video.style.height = this.video.videoWidth;
-    console.log(this.video.videoWidth);
 };
 
 Camera.prototype.rotateRight = function() {
-    this.videoRotation = 90;
-};
-
-Camera.prototype.rotateImage = function(baseSrc, callback) {
-    // Create a temporary canvas
-    var tmpCanvas = document.createElement('canvas');
-    // Create a temporary image
-    var tmpImage = new Image();
-    // Set the temporary image's source to the submitted base64 code
-    tmpImage.src = baseSrc;
-    // Get the 2d context of the temporary canvas
-    var tmpCtx = tmpCanvas.getContext('2d');
-    // When the image is done loading (or setting up)
-    tmpImage.onload = function() {
-        // If the video rotation is 0, then it's normal
-        // Else it's rotated left or right by 90 degrees
-        if (this.videoRotation == 0) {
-            // Set the temporary canvas width and height
-            tmpCanvas.width = tmpImage.width;
-            tmpCanvas.height = tmpImage.height;
-
-        } else if ((this.videoRotation % 90) == 0) {
-            // Set the temporary canvas width and height
-            tmpCanvas.height = tmpImage.width;
-            tmpCanvas.width = tmpImage.height;
-
-            // If it's negative, it's rotated counterclockwise
-            // Set the origin of the drawImage (0,0) to the correct corner
-            if (this.videoRotation < 0) {
-                // If it's negative (-90 degrees), then it'll be at the bottom left corner
-                tmpCtx.translate(0, tmpCanvas.height);
-            } else {
-                // If it's positive (90 degrees), then it'll start at the top right corner
-                tmpCtx.translate(tmpCanvas.width, 0);
-            }
-            // Rotate the 2d context base on the degree (90 or -90)
-            tmpCtx.rotate(this.videoRotation * (Math.PI / 180));
-        }
-
-        // Draw the image onto the canvas
-        tmpCtx.drawImage(tmpImage, 0, 0);
-
-        // Run the callback to return the base64 source back to the image
-        callback(tmpCanvas.toDataURL('image/png'));
-    }
-};
-
-Camera.prototype.rotateImageElement = function() {
-    // If video rotation is not 0, then rotate the image element on DOM to match rotated video
-    if (this.videoRotation != 0) {
-        switch (this.aspectRatio) {
-            case '1.33':
-                $(this.image).css('height', '1100');
-                $(this.image).css('width', '825');
-                break;
-            case '1.6':
-                break;
-            case '1.78':
-                $(this.image).css('height', '889');
-                $(this.image).css('width', '500');
-                break;
-            case '1.9':
-                break;
-            default:
-                $(this.image).css('height', '1100');
-                $(this.image).css('width', '825');
-        }
-    } else {
-        switch (this.aspectRatio) {
-            case '1.33':
-                $(this.image).css('height', '825');
-                $(this.image).css('width', '1100');
-                break;
-            case '1.6':
-                break;
-            case '1.78':
-                $(this.image).css('height', '500');
-                $(this.image).css('width', '889');
-                break;
-            case '1.9':
-                break;
-            default:
-                $(this.image).css('height', '825');
-                $(this.image).css('width', '1100');
-        }
-    }
-};
-
-Camera.prototype.fixVideoPadding = function() {
-    console.log(this.videoRotation);
-
-    // If video rotation is not 0, then add some padding towards the top and bottom of the video element to show all of it in the dialog
-    if (this.videoRotation != 0) {
-        switch (this.aspectRatio) {
-            case '1.33':
-                $(this.video).css('padding-top', '85px');
-                $(this.video).css('padding-bottom', '85px');
-                break;
-            case '1.6':
-                break;
-            case '1.78':
-                $(this.video).css('padding-top', '200px');
-                $(this.video).css('padding-bottom', '200px');
-                break;
-            case '1.9':
-                break;
-            default:
-                $(this.video).css('padding-top', '85px');
-                $(this.video).css('padding-bottom', '85px');
-        }
-    } else {
-        $(this.video).css('padding-top', '0px');
-        $(this.video).css('padding-bottom', '0px');
+    if (this.videoRotation != 90) {
+        this.videoRotation += 90;
+        this.video.style.transform = 'rotate(' + this.videoRotation + 'deg)';
     }
 };
