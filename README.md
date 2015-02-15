@@ -1,5 +1,10 @@
 # Camera.js
-A simple Camera object to invoke HTML5's getUserMedia using JavaScript.
+A simple Camera object to invoke HTML5's Stream API (getUserMedia) using JavaScript.
+
+## Browser Compatibility
+| Google Chrome | Firefox | Internet Explorer | Opera | Safari |
+| :-----------: | :-----: | :---------------: | :---: | :----: |
+| 22+           | 17+     | N/A               | 18+   | N/A    |
 
 ## Getting Started
 ### HTML
