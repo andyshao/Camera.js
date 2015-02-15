@@ -20,6 +20,9 @@ var Camera = Camera || function(minWidth, minHeight, video, canvas, image, scale
 
         // Video rotation
         this.videoRotation = 0;
+
+        // Video rotated recently?
+        this.rotated = 0;
     };
 
 Camera.prototype.startCamera = function(success, error) {
@@ -35,8 +38,6 @@ Camera.prototype.startCamera = function(success, error) {
             var retryLimit = 50;
 
             self.mediaStream = stream;
-
-            console.log(self.minWidth);
 
             self.video.src = (window.URL && window.URL.createObjectURL(stream));
 
@@ -59,11 +60,11 @@ Camera.prototype.startCamera = function(success, error) {
                     }
 
                 } else if (videoWidth && videoHeight) {
-                    self.canvas.width = videoWidth * self.scale;
-                    self.canvas.height = videoHeight * self.scale;
+                    self.image.height = self.video.videoHeight;
+                    self.image.width = self.video.videoWidth;
 
-                    self.image.width = videoWidth * self.scale;
-                    self.image.height = videoHeight * self.scale;
+                    self.canvas.width = videoWidth;
+                    self.canvas.height = videoHeight;
                 } else {
                     console.log("An error has occurred: Can't retrieve video width and height");
                 }
@@ -97,31 +98,37 @@ Camera.prototype.takePicture = function(callback) {
     // Get the frame from the video
     var ctx = self.canvas.getContext('2d');
 
-    // If the video is turned/rotated
-    if (self.videoRotation % 180 != 0) {
-        // Set the translate pointer to the correct coordinate before drawing
+    if (self.rotated == 1) {
+        // Base on the rotation
         switch (self.videoRotation) {
-            case (self.videoRotation > 0):
-                ctx.translate(self.canvas.width, 0);
-                break;
-            case (self.videoRotation < 0):
+            case -90:
+            case 270:
                 ctx.translate(0, self.canvas.height);
+                self.image.height = self.video.videoWidth;
+                self.image.width = self.video.videoHeight;
+                break;
+            case 90:
+            case -270:
+                ctx.translate(self.canvas.width, 0);
+                self.image.height = self.video.videoWidth;
+                self.image.width = self.video.videoHeight;
+                break;
+            case 180:
+            case -180:
+                ctx.translate(self.canvas.width, self.canvas.height);
+                self.image.height = self.video.videoHeight;
+                self.image.width = self.video.videoWidth;
+                break;
+            case 0:
+                self.image.height = self.video.videoHeight;
+                self.image.width = self.video.videoWidth;
                 break;
             default:
+                console.log('Error: Can not translate ctx');
                 break;
         }
 
-
-        self.image.height = self.video.videoWidth;
-        self.image.width = self.video.videoHeight;
-
-        // Rotate the 2d context base on the degree
-        ctx.rotate(self.videoRotation * (Math.PI/180));
-    } else if (self.videoRotation < 0) {
-        self.image.height = self.video.videoHeight;
-        self.image.width = self.video.videoWidth;
-
-        ctx.translate(self.canvas.width, self.canvas.height);
+        self.rotated = 0;
         ctx.rotate(self.videoRotation * (Math.PI/180));
     }
 
@@ -138,21 +145,45 @@ Camera.prototype.rotateLeft = function() {
     var self = this;
     self.videoRotation -= 90;
 
-    // If rotation mod 180 is 0, then the video is horizontal
-    if (self.videoRotation % 180 == 0) {
-        self.canvas.height = self.video.videoHeight;
-        self.canvas.width = self.video.videoWidth;
-
-        self.video.height = self.video.videoHeight * self.scale;
-    } else if (self.videoRotation % 90 == 0) {
-        self.canvas.height = self.video.videoWidth;
-        self.canvas.width = self.video.videoHeight;
-
-        self.video.height = self.video.videoWidth * self.scale;
-    } else {
-        console.log("Error: Failed to calculate rotation");
+    if (self.videoRotation < -270) {
+        self.videoRotation = 0;
     }
 
+    // Switch base on video rotation
+    switch (self.videoRotation) {
+        case 90:
+        case -90:
+            self.canvas.height = self.video.videoWidth;
+            self.canvas.width = self.video.videoHeight;
+
+            self.video.height = self.video.videoWidth * self.scale;
+            break;
+        case 180:
+        case -180:
+            self.canvas.height = self.video.videoHeight;
+            self.canvas.width = self.video.videoWidth;
+
+            self.video.height = self.video.videoHeight * self.scale;
+            break;
+        case 270:
+        case -270:
+            self.canvas.height = self.video.videoWidth;
+            self.canvas.width = self.video.videoHeight;
+
+            self.video.height = self.video.videoWidth * self.scale;
+            break;
+        case 0:
+            self.canvas.height = self.video.videoHeight;
+            self.canvas.width = self.video.videoWidth;
+
+            self.video.height = self.video.videoHeight * self.scale;
+            break;
+        default:
+            console.log('Error: Could not rotate canvas');
+            break;
+    }
+
+    self.rotated = 1;
     self.video.style.transform = ' rotate(' + this.videoRotation + 'deg)';
 };
 
@@ -160,19 +191,44 @@ Camera.prototype.rotateRight = function() {
     var self = this;
     self.videoRotation += 90;
 
-    if (self.videoRotation % 180 == 0) {
-        self.canvas.height = self.video.videoHeight;
-        self.canvas.width = self.video.videoWidth;
-
-        self.video.height = self.video.videoHeight * self.scale;
-    } else if (self.videoRotation % 90 == 0) {
-        self.canvas.height = self.video.videoWidth;
-        self.canvas.width = self.video.videoHeight;
-
-        self.video.height = self.video.videoWidth * self.scale;
-    } else {
-        console.log("Error: Failed to calculate rotation");
+    if (self.videoRotation > 270) {
+        self.videoRotation = 0;
     }
 
+    // Switch base on video rotation
+    switch (self.videoRotation) {
+        case 90:
+        case -90:
+            self.canvas.height = self.video.videoWidth;
+            self.canvas.width = self.video.videoHeight;
+
+            self.video.height = self.video.videoWidth * self.scale;
+            break;
+        case 180:
+        case -180:
+            self.canvas.height = self.video.videoHeight;
+            self.canvas.width = self.video.videoWidth;
+
+            self.video.height = self.video.videoHeight * self.scale;
+            break;
+        case 270:
+        case -270:
+            self.canvas.height = self.video.videoWidth;
+            self.canvas.width = self.video.videoHeight;
+
+            self.video.height = self.video.videoWidth * self.scale;
+            break;
+        case 0:
+            self.canvas.height = self.video.videoHeight;
+            self.canvas.width = self.video.videoWidth;
+
+            self.video.height = self.video.videoHeight * self.scale;
+            break;
+        default:
+            console.log('Error: Could not rotate canvas');
+            break;
+    }
+
+    self.rotated = 1;
     self.video.style.transform = ' rotate(' + this.videoRotation + 'deg)';
 };
