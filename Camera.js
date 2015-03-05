@@ -64,12 +64,14 @@ Camera.prototype.startCamera = function(success, error) {
 
                     self.canvas.width = videoWidth;
                     self.canvas.height = videoHeight;
+
+                    success();
                 } else {
                     console.log("An error has occurred: Can't retrieve video width and height");
+
+                    error();
                 }
             };
-
-            success();
         }, function errorCallback(error) {
             console.log("An error occurred: " + error.code);
 
