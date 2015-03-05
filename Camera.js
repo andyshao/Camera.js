@@ -49,7 +49,6 @@ Camera.prototype.startCamera = function(success, error) {
                 self.video.width = videoWidth * self.scale;
                 self.video.height = videoHeight * self.scale;
 
-
                 if (!videoWidth || !videoHeight) {
                     if (retryCount < retryLimit) {
                         retryCount++;
