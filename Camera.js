@@ -43,7 +43,7 @@ Camera.prototype.startCamera = function(success, error) {
 
             self.video.play();
 
-            camera.video.onplaying = function(e) {
+            self.video.onplaying = function(e) {
                 var videoWidth = this.videoWidth;
                 var videoHeight = this.videoHeight;
                 self.video.width = videoWidth * self.scale;
