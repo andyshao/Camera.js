@@ -23,6 +23,9 @@ var Camera = Camera || function(minWidth, minHeight, video, canvas, image, scale
 
         // Video rotated recently?
         this.rotated = 0;
+
+        // Camera status
+        this.on = false;
     };
 
 Camera.prototype.startCamera = function(success, error) {
@@ -53,8 +56,8 @@ Camera.prototype.startCamera = function(success, error) {
                     if (retryCount < retryLimit) {
                         retryCount++;
                         window.setTimeout(function () {
-                            video.pause();
-                            video.play();
+                            self.video.pause();
+                            self.video.play();
                         }, 100);
                     }
 
@@ -65,6 +68,8 @@ Camera.prototype.startCamera = function(success, error) {
                     self.canvas.width = videoWidth;
                     self.canvas.height = videoHeight;
 
+                    self.on = true;
+
                     success();
                 } else {
                     console.log("An error has occurred: Can't retrieve video width and height");
@@ -72,20 +77,23 @@ Camera.prototype.startCamera = function(success, error) {
                     error();
                 }
             };
-        }, function errorCallback(error) {
-            console.log("An error occurred: " + error.code);
-
+        }, function errorCallback(e) {
             error();
         }
     );
 };
 
 Camera.prototype.stopCamera = function(success, error) {
-    this.mediaStream.stop();
-    this.mediaStream = null;
-    this.video.pause();
+    var self = this;
 
-    if ((this.mediaStream == null) && (this.video.paused)) {
+    self.mediaStream.stop();
+    self.mediaStream = null;
+    self.video.pause();
+
+    if ((self.mediaStream == null) && (self.video.paused)) {
+        self.on = false;
+        self.video.removeAttribute("style");
+
         success();
     } else {
         console.log("Error: Could not pause/stop camera");
@@ -232,4 +240,9 @@ Camera.prototype.rotateRight = function() {
 
     self.rotated = 1;
     self.video.style.transform = ' rotate(' + this.videoRotation + 'deg)';
+};
+
+Camera.prototype.getOptions = function() {
+    var self = this;
+    return JSON.stringify(self);
 };
