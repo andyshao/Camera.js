@@ -86,7 +86,8 @@ Camera.prototype.startCamera = function(success, error) {
 Camera.prototype.stopCamera = function(success, error) {
     var self = this;
 
-    self.mediaStream.stop();
+    // Comment out for Chrome 47
+    // self.mediaStream.stop();
     self.mediaStream = null;
     self.video.pause();
 
