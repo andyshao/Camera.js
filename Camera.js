@@ -23,213 +23,234 @@ var Camera = Camera || function(minWidth, minHeight, video, canvas, image, scale
 
         // Video rotated recently?
         this.rotated = 0;
-    };
 
-Camera.prototype.startCamera = function(success, error) {
-    var self = this;
+        // Camera status
+        this.on = false;
 
-    navigator.getUserMedia(
-        {
-            audio: false,
-            video: self.resolution
-        },
-        function successCallBack(stream) {
-            var retryCount = 0;
-            var retryLimit = 50;
+        // Start Camera
+        this.startCamera = function(success, error) {
+            var self = this;
 
-            self.mediaStream = stream;
+            navigator.getUserMedia(
+                {
+                    audio: false,
+                    video: self.resolution
+                },
+                function successCallBack(stream) {
+                    var retryCount = 0;
+                    var retryLimit = 50;
 
-            self.video.src = (window.URL && window.URL.createObjectURL(stream));
+                    self.mediaStream = stream;
 
-            self.video.play();
+                    self.video.src = (window.URL && window.URL.createObjectURL(stream));
 
-            self.video.onplaying = function(e) {
-                var videoWidth = this.videoWidth;
-                var videoHeight = this.videoHeight;
-                self.video.width = videoWidth * self.scale;
-                self.video.height = videoHeight * self.scale;
+                    self.video.play();
 
-                if (!videoWidth || !videoHeight) {
-                    if (retryCount < retryLimit) {
-                        retryCount++;
-                        window.setTimeout(function () {
-                            video.pause();
-                            video.play();
-                        }, 100);
-                    }
+                    self.video.onplaying = function(e) {
+                        var videoWidth = this.videoWidth;
+                        var videoHeight = this.videoHeight;
+                        self.video.width = videoWidth * self.scale;
+                        self.video.height = videoHeight * self.scale;
 
-                } else if (videoWidth && videoHeight) {
-                    self.image.height = self.video.videoHeight;
-                    self.image.width = self.video.videoWidth;
+                        if (!videoWidth || !videoHeight) {
+                            if (retryCount < retryLimit) {
+                                retryCount++;
+                                window.setTimeout(function () {
+                                    self.video.pause();
+                                    self.video.play();
+                                }, 100);
+                            }
 
-                    self.canvas.width = videoWidth;
-                    self.canvas.height = videoHeight;
+                        } else if (videoWidth && videoHeight) {
+                            self.image.height = self.video.videoHeight;
+                            self.image.width = self.video.videoWidth;
 
-                    success();
-                } else {
-                    console.log("An error has occurred: Can't retrieve video width and height");
+                            self.canvas.width = videoWidth;
+                            self.canvas.height = videoHeight;
 
+                            self.on = true;
+
+                            success();
+                        } else {
+                            console.log("An error has occurred: Can't retrieve video width and height");
+
+                            error();
+                        }
+                    };
+                }, function errorCallback(e) {
                     error();
                 }
-            };
-        }, function errorCallback(error) {
-            console.log("An error occurred: " + error.code);
+            );
+        };
 
-            error();
-        }
-    );
-};
+        // Stop Camera
+        this.stopCamera = function(success, error) {
+            var self = this;
 
-Camera.prototype.stopCamera = function(success, error) {
-    this.mediaStream.stop();
-    this.mediaStream = null;
-    this.video.pause();
+            // Comment out for Chrome 47
+            // self.mediaStream.stop();
+            self.mediaStream = null;
+            self.video.pause();
 
-    if ((this.mediaStream == null) && (this.video.paused)) {
-        success();
-    } else {
-        console.log("Error: Could not pause/stop camera");
-        error();
-    }
-};
+            if ((self.mediaStream == null) && (self.video.paused)) {
+                self.on = false;
+                self.video.removeAttribute("style");
 
-Camera.prototype.takePicture = function(callback) {
-    var self = this;
+                success();
+            } else {
+                console.log("Error: Could not pause/stop camera");
+                error();
+            }
+        };
 
-    // Get the frame from the video
-    var ctx = self.canvas.getContext('2d');
+        // Take a picture
+        this.takePicture = function(callback) {
+            var self = this;
 
-    if (self.rotated == 1) {
-        // Base on the rotation
-        switch (self.videoRotation) {
-            case -90:
-            case 270:
-                ctx.translate(0, self.canvas.height);
-                self.image.height = self.video.videoWidth;
-                self.image.width = self.video.videoHeight;
-                break;
-            case 90:
-            case -270:
-                ctx.translate(self.canvas.width, 0);
-                self.image.height = self.video.videoWidth;
-                self.image.width = self.video.videoHeight;
-                break;
-            case 180:
-            case -180:
-                ctx.translate(self.canvas.width, self.canvas.height);
-                self.image.height = self.video.videoHeight;
-                self.image.width = self.video.videoWidth;
-                break;
-            case 0:
-                self.image.height = self.video.videoHeight;
-                self.image.width = self.video.videoWidth;
-                break;
-            default:
-                console.log('Error: Can not translate ctx');
-                break;
-        }
+            // Get the frame from the video
+            var ctx = self.canvas.getContext('2d');
 
-        self.rotated = 0;
-        ctx.rotate(self.videoRotation * (Math.PI/180));
-    }
+            if (self.rotated == 1) {
+                // Base on the rotation
+                switch (self.videoRotation) {
+                    case -90:
+                    case 270:
+                        ctx.translate(0, self.canvas.height);
+                        self.image.height = self.video.videoWidth;
+                        self.image.width = self.video.videoHeight;
+                        break;
+                    case 90:
+                    case -270:
+                        ctx.translate(self.canvas.width, 0);
+                        self.image.height = self.video.videoWidth;
+                        self.image.width = self.video.videoHeight;
+                        break;
+                    case 180:
+                    case -180:
+                        ctx.translate(self.canvas.width, self.canvas.height);
+                        self.image.height = self.video.videoHeight;
+                        self.image.width = self.video.videoWidth;
+                        break;
+                    case 0:
+                        self.image.height = self.video.videoHeight;
+                        self.image.width = self.video.videoWidth;
+                        break;
+                    default:
+                        console.log('Error: Can not translate ctx');
+                        break;
+                }
 
-    // Draw the image to the canvas
-    ctx.drawImage(self.video, 0, 0);
+                self.rotated = 0;
+                ctx.rotate(self.videoRotation * (Math.PI/180));
+            }
 
-    // Set the source
-    self.image.src = self.canvas.toDataURL('image/png', 1.0);
+            // Draw the image to the canvas
+            ctx.drawImage(self.video, 0, 0);
 
-    callback();
-};
+            // Set the source
+            self.image.src = self.canvas.toDataURL('image/png', 1.0);
 
-Camera.prototype.rotateLeft = function() {
-    var self = this;
-    self.videoRotation -= 90;
+            callback();
+        };
 
-    if (self.videoRotation < -270) {
-        self.videoRotation = 0;
-    }
+        // Rotate the video/canvas left
+        this.rotateLeft = function() {
+            var self = this;
+            self.videoRotation -= 90;
 
-    // Switch base on video rotation
-    switch (self.videoRotation) {
-        case 90:
-        case -90:
-            self.canvas.height = self.video.videoWidth;
-            self.canvas.width = self.video.videoHeight;
+            if (self.videoRotation < -270) {
+                self.videoRotation = 0;
+            }
 
-            self.video.height = self.video.videoWidth * self.scale;
-            break;
-        case 180:
-        case -180:
-            self.canvas.height = self.video.videoHeight;
-            self.canvas.width = self.video.videoWidth;
+            // Switch base on video rotation
+            switch (self.videoRotation) {
+                case 90:
+                case -90:
+                    self.canvas.height = self.video.videoWidth;
+                    self.canvas.width = self.video.videoHeight;
 
-            self.video.height = self.video.videoHeight * self.scale;
-            break;
-        case 270:
-        case -270:
-            self.canvas.height = self.video.videoWidth;
-            self.canvas.width = self.video.videoHeight;
+                    self.video.height = self.video.videoWidth * self.scale;
+                    break;
+                case 180:
+                case -180:
+                    self.canvas.height = self.video.videoHeight;
+                    self.canvas.width = self.video.videoWidth;
 
-            self.video.height = self.video.videoWidth * self.scale;
-            break;
-        case 0:
-            self.canvas.height = self.video.videoHeight;
-            self.canvas.width = self.video.videoWidth;
+                    self.video.height = self.video.videoHeight * self.scale;
+                    break;
+                case 270:
+                case -270:
+                    self.canvas.height = self.video.videoWidth;
+                    self.canvas.width = self.video.videoHeight;
 
-            self.video.height = self.video.videoHeight * self.scale;
-            break;
-        default:
-            console.log('Error: Could not rotate canvas');
-            break;
-    }
+                    self.video.height = self.video.videoWidth * self.scale;
+                    break;
+                case 0:
+                    self.canvas.height = self.video.videoHeight;
+                    self.canvas.width = self.video.videoWidth;
 
-    self.rotated = 1;
-    self.video.style.transform = ' rotate(' + this.videoRotation + 'deg)';
-};
+                    self.video.height = self.video.videoHeight * self.scale;
+                    break;
+                default:
+                    console.log('Error: Could not rotate canvas');
+                    break;
+            }
 
-Camera.prototype.rotateRight = function() {
-    var self = this;
-    self.videoRotation += 90;
+            self.rotated = 1;
+            self.video.style.transform = ' rotate(' + this.videoRotation + 'deg)';
+        };
 
-    if (self.videoRotation > 270) {
-        self.videoRotation = 0;
-    }
+        // Rotate the video/canvas right
+        this.rotateRight = function() {
+            var self = this;
+            self.videoRotation += 90;
 
-    // Switch base on video rotation
-    switch (self.videoRotation) {
-        case 90:
-        case -90:
-            self.canvas.height = self.video.videoWidth;
-            self.canvas.width = self.video.videoHeight;
+            if (self.videoRotation > 270) {
+                self.videoRotation = 0;
+            }
 
-            self.video.height = self.video.videoWidth * self.scale;
-            break;
-        case 180:
-        case -180:
-            self.canvas.height = self.video.videoHeight;
-            self.canvas.width = self.video.videoWidth;
+            // Switch base on video rotation
+            switch (self.videoRotation) {
+                case 90:
+                case -90:
+                    self.canvas.height = self.video.videoWidth;
+                    self.canvas.width = self.video.videoHeight;
 
-            self.video.height = self.video.videoHeight * self.scale;
-            break;
-        case 270:
-        case -270:
-            self.canvas.height = self.video.videoWidth;
-            self.canvas.width = self.video.videoHeight;
+                    self.video.height = self.video.videoWidth * self.scale;
+                    break;
+                case 180:
+                case -180:
+                    self.canvas.height = self.video.videoHeight;
+                    self.canvas.width = self.video.videoWidth;
 
-            self.video.height = self.video.videoWidth * self.scale;
-            break;
-        case 0:
-            self.canvas.height = self.video.videoHeight;
-            self.canvas.width = self.video.videoWidth;
+                    self.video.height = self.video.videoHeight * self.scale;
+                    break;
+                case 270:
+                case -270:
+                    self.canvas.height = self.video.videoWidth;
+                    self.canvas.width = self.video.videoHeight;
 
-            self.video.height = self.video.videoHeight * self.scale;
-            break;
-        default:
-            console.log('Error: Could not rotate canvas');
-            break;
-    }
+                    self.video.height = self.video.videoWidth * self.scale;
+                    break;
+                case 0:
+                    self.canvas.height = self.video.videoHeight;
+                    self.canvas.width = self.video.videoWidth;
 
-    self.rotated = 1;
-    self.video.style.transform = ' rotate(' + this.videoRotation + 'deg)';
-};
+                    self.video.height = self.video.videoHeight * self.scale;
+                    break;
+                default:
+                    console.log('Error: Could not rotate canvas');
+                    break;
+            }
+
+            self.rotated = 1;
+            self.video.style.transform = ' rotate(' + this.videoRotation + 'deg)';
+        };
+
+        // Get camera options
+        this.getOptions = function() {
+            var self = this;
+            return JSON.stringify(self);
+        };
+
+    };
